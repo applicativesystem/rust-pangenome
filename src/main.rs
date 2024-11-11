@@ -9,7 +9,7 @@ use std::collections::HashSet;
 /*
  *Author Gaurav Sablok
  *Universitat Potsdam
- *Date 2024-11-7
+ *Date 2024-11-11
 
 rust implementation of metagenome annotations. given an metagenome and
 the alignment files, will write all the annotations.
@@ -21,78 +21,46 @@ fn main() {
     metagenome_annotate(&args.alignment_arg, &args.fasta_arg);
 }
 
-fn metagenome_annotate(path: &str, fasta: &str) {
+fn metagenome_annotate() {
 
-        let f = File::open(&path).expect("file not present");
-        let read = BufReader::new(f);
-
-  // struct for the genome alignment types
-        #[derive(Debug)]
-        struct AlignmentGFF {
-            id: String,
-            genomefeature : String,
-            start: u32,
-            end: u32,
-            strand: String,
-        }
-
-  // puting the struct alignment to the use
-        let mut vectorhold = Vec::new();
-        for i in read.lines() {
-            let line = i
+    #[derive(Debug, Clone)]
+    struct AlignmentGFF {
+        id: String,
+        genomefeature : String,
+        start: u32,
+        end: u32,
+        strand: String,
+    }
+    let mut vectorhold = Vec::new();
+    let mut vectorstring = Vec::new();
+    let f = File::open(&path).expect("file not present");
+    let read = BufReader::new(f); 
+     for gffreadline in read.lines(){
+     let gffline = gffreadline
                        .expect("line not present");
-            if line.starts_with("#") {
+            if gffline.starts_with("#") {
             continue
             } else {
-            let mut linehold = line.to_string().split("\t").collect::<Vec<&str>>();
-            let mut idhold = &linehold[0];
-            let mut genomefeaturehold = &linehold[2];
-            let mut starthold = &linehold[3].to_string().parse::<u32>();
-            let mut endhold = &linehold[4].to_string().parse::<u32>();
-            let mut strandhold = &linehold[5].to_string();
-            vectorhold.push(AlignmentGFF{
-            id:idhold.to_string(),
-            genomefeature: genomefeaturehold.to_string(),
-            start: starthold.parse::<u32>().unwrap(),
-            end: endhold.parse::<u32>().unwrap(),
-            strand: strandhold.to_string()
-            })
+                vectorhold.push(gffline)    
             }
-            }
-
-    // struct for the sequence types
-        #[derive(Debug)]
-        struct Sequence {
-            id: String,
-            sequence:String
-            }
-
-        let mut id_hold = Vec::new();
-        let mut sequence_hold = Vec::new();
-        let mut fasta_open = File::open(&args.fasta_arg).expect("file not present");
-        let mut fasta_read = BufReader::new(fasta_open);
-        for i in fasta_read.lines() {
-            if i.starts_with(">") {
-            let mut line = i.expect("line not present").split(" ").collect::<Vec<&str>>();
-            let mut header = line[0];
-                id_hold.push(header);
-            }
-            if ! i.starts_with(">"){
-            let line = i.expect("file not present");
-            sequence_hold.push(line);
-            }
-        }
-
-        let mut final_seq = Vec::new();
-        for i in 0..id_hold.len() {
-        final_seq.push(Sequence{
-        id: id_hold[i].to_string(),
-        sequence: sequence_hold[i].to_string(),
-        })
-        }
-
-    // struct for the positive strand annotations
-     #[derive(Debug)]
+     }
+     for i in vectorhold.iter() {
+        let addline = i.split("\t").collect::<Vec<&str>>();
+        let mut idhold = addline[0];
+        let mut genomefeaturehold = addline[2];
+        let mut starthold = addline[3].to_string().parse::<u32>().expect("number not present");
+        let mut endhold = addline[4].to_string().parse::<u32>().expect("number not present");
+        let mut strandhold = addline[6].to_string();
+        vectorstring.push(AlignmentGFF{
+        id:idhold.to_string(),
+        genomefeature: genomefeaturehold.to_string(),
+        start: starthold,
+        end: endhold,
+        strand: strandhold.to_string()
+     })
+     }
+     
+     #[derive(Debug, Clone)]
      struct Positive {
      id: String,
      genomefeature: String,
@@ -100,9 +68,8 @@ fn metagenome_annotate(path: &str, fasta: &str) {
      end: u32,
      strand: String
      }
-
-    // struct for the negative strand annotations
-     #[derive(Debug)]
+    
+     #[derive(Debug, Clone)]
      struct Negative {
      id:String,
      genomefeature:String,
@@ -111,62 +78,110 @@ fn metagenome_annotate(path: &str, fasta: &str) {
      strand:String,
      }
 
-     // putting the struct to the use
+     #[derive(Debug, Clone)]
+    struct Sequence {
+        id: String,
+        sequence:String
+    }
 
-     let mut positive = Vec::new();
-     let mut negative = Vec::new();
-
-     for add in vectorhold.iter() {
-       if i.strand == "+" {
-        positive.push(Positive{
-        id: add.id,
-        genomefeature: add.genomefeature,
-        start: add.start,
-        end: add.end,
-        strand: add.strand,
-       })
-       }
-       if i.strand == "-" {
-        negative.push(Negative{
-        id: i.id,
-        genomefeature: i.genomefeature,
-        start: i.start,
-        end: i.end,
-        strand: i.strand})
-       }
-       }
-
-    // struct for the sequence classification
+    #[derive(Debug, Clone)]
      struct CaptureSeq {
      id: String,
-     seq: String}
+     seq: String,
+     strand: String,
+     }
 
-     let mut mrna_capture = Vec::new();
-     let mut cds_capture = Vec::new();
+    let mut positive = Vec::new();
+    let mut negative = Vec::new();
+    let new_positive = vectorstring.clone();
+    let new_negative = vectorstring.clone();
+    for i in new_positive.into_iter() { 
+        if i.strand == "+" {
+            positive.push(Positive{
+            id: i.id,
+            genomefeature: i.genomefeature,
+            start: i.start,
+            end: i.end,
+            strand: i.strand,
+           })
+           }
+    }
+    for i in new_negative.into_iter() {
+        if i.strand == "-" {
+         negative.push(Negative{
+         id: i.id,
+         genomefeature: i.genomefeature,
+         start: i.start,
+         end: i.end,
+         strand: i.strand,
+        })
+        }
+    }
+    let mut header = vec![];
+    let mut sequence = vec![];
+    let f = File::open(&fasta).expect("file not present");
+     let read = BufReader::new(f);
+     for i in read.lines() {
+     let line = i.expect("line not present");
+     if line.starts_with(">") {
+         header.push(line)
+     } else {
+         sequence.push(line)
+     }
+   }
+    let mut final_seq = Vec::new();
+    for i in 0..header.len() {
+    final_seq.push(Sequence{
+        id: header[i].to_string(),
+        sequence: sequence[i].to_string(),
+        })
+    }
 
-     for i in sequence_hold.iter() {
-      for j in vectorhold.iter() {
-      if j.hold == "mRNA" {
-        mrna_capture.push( CaptureSeq{
-        id: i.id,
-        seq: j.seq[i.start:i.end]}),
-      }
-      }
-      }
-      if j.hold == "CDS" {
-      cds_capture.push(CaptureSeq{
-        id: i.id,
-        seq: j.seq[i.start: i.end],
-      })
-      }
+    // implementing the borrowing and the copy traits here. 
 
-      let mut mrna_file = File::create("mRNA.fasta").expect("file not present");
-      for i in mrna_capture.iter() {
-      writeln!(mrna_file, ">{:?}\n{:?}\n", i.id, i.seq)
-      }
 
-      let cds_file = File::create("cds.fasta").expect("file not present");
-      for i in cds_capture.iter() {
-      writeln!(cds_file, ">{:?}\n{:?}\n", i.id, i.seq)
-      }
-}
+    let mut mrna_length: Vec<usize> = Vec::new();
+    let mut cds_length: Vec<usize> = Vec::new();
+
+    for length in cds_capture.iter() {
+    let mut lengthcap = length.seq.len();
+    cds_length.push(lengthcap)
+    }
+
+    for length_mrna in mrna_capture.iter() {
+    let mut lengthmrna = length_mrna.seq.len();
+    mrna_length.push(lengthmrna)
+    }
+
+
+    let mut mrna_file =  File::create("mRNA.fasta").expect("file not present");
+    for i in mrna_capture.iter() {
+      writeln!(mrna_file, ">{:?}\n{:?}\n", i.id, i.seq);
+    }
+
+    let mut cds_file = File::create("cds.fasta").expect("file not present");
+    for i in cds_capture.iter() {
+      writeln!(cds_file, ">{:?}\n{:?}\n", i.id, i.seq);
+    }
+
+    let mut mrna_positive = File::create("mRNApositive.fasta").expect("file not present");
+    for i in mrna_capture.iter(){
+    if i.strand == "+" {
+    writeln!(mrna_positive, ">{}\n{}\n", i.id, i.seq );
+    }
+    }
+
+    let mut cds_positive = File::create("cds-positive.fasta").expect("file not present");
+    for i in cds_capture.iter() {
+    if i.strand == "+"{
+        writeln!(cds_positive, ">{}\n{}\n", i.id, i.seq);
+    }
+    }
+
+    let mut cds_negative = File::create("cds-negative.fasta").expect("file not present");
+    for i in cds_capture {
+    if i.strand == "-" {
+        writeln!(cds_negative, ">{}\n{}\n", i.id, i.seq);
+    }
+    }
+    }
