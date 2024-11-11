@@ -3,7 +3,6 @@ use args::AlignmentArgs;
 use clap::Parser;
 use std::fs::File;
 use std::io::{Write, BufReader, BufRead};
-use std::collections::HashSet;
 #[allow(dead_code)]
 
 /*
@@ -21,7 +20,7 @@ fn main() {
     metagenome_annotate(&args.alignment_arg, &args.fasta_arg);
 }
 
-fn metagenome_annotate() {
+fn metagenome_annotate(path: &str, fasta: &str) {
 
     #[derive(Debug, Clone)]
     struct AlignmentGFF {
@@ -139,6 +138,21 @@ fn metagenome_annotate() {
 
     // implementing the borrowing and the copy traits here. 
 
+
+    let mut mrna_capture = Vec::new();
+    for vectiter in vectorstring.iter_mut() {
+        for seqiter in &mut final_seq.iter_mut() {
+            if vectiter.genomefeature == "mRNA" {
+                let seqhold = seqiter.sequence[vectiter.start..vectiter.end].to_string();
+                mrna_capture.push( CaptureSeq{
+                id: vectiter.id,
+                seq: seqhold,
+                strand : vectiter.strand,
+      })
+      }
+    }
+   }
+   //  borrowing trait error cannot move out of `vectiter.id` which is behind a mutable reference
 
     let mut mrna_length: Vec<usize> = Vec::new();
     let mut cds_length: Vec<usize> = Vec::new();
