@@ -2,13 +2,11 @@
 name = "rust-pangenome"
 version = "0.1.0"
 edition = "2021"
+readme = "README.md"
+license = "LICENSE"
+description = "processing metagenome-genome-pangenome annotation"
+homepage = "https://github.com/applicativesystem/rust-pangenome"
+repository = "https://github.com/applicativesystem/rust-pangenome"
 
 [dependencies]
 clap = { version = "4.5.20", features = ["derive"] }
-cmd_lib = "1.9.5"
-diesel = "2.2.4"
-plotly = "0.10.0"
-plotters = "0.3.7"
-polars = "0.44.2"
-rayon = "1.10.0"
-stat-rs = "0.1.1"
